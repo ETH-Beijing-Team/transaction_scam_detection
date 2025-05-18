@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0"> -->
+    <title>区块链交易欺诈检测系统</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f7f9fc;
+        }
+        
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #f1f1f1;
+            border: 1px solid #ddd;
+            margin-right: 5px;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+        }
+        
+        .tab.active {
+            background-color: white;
+            border-bottom: 1px solid white;
+            margin-bottom: -1px;
+            font-weight: bold;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        input[type="text"], input[type="number"], textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        textarea {
+            height: 120px;
+            font-family: monospace;
+        }
+        
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .loading {
+            text-align: center;
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .error {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .scam {
+            background-color: #ffebee;
+            border: 2px solid #f44336;
+        }
+        
+        .not-scam {
+            background-color: #e8f5e9;
+            border: 2px solid #4caf50;
+        }
+        
+        .confidence {
+            margin-top: 10px;
+            height: 20px;
+            background-color: #eee;
+            border-radius: 10px;
+            position: relative;
+        }
+        
+        .confidence-bar {
+            height: 100%;
+            border-radius: 10px;
+            color: white;
+            text-align: center;
+            line-height: 20px;
+            font-weight: bold;
+            transition: width 0.8s ease-in-out;
+        }
+        
+        .examples {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .example-btn {
+            background-color: #f1f1f1;
+            border: 1px solid #ddd;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .example-btn:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        a.button {
+            display: inline-block;
+            background-color: #3498db;
+            color: white;
+            text-decoration: none;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+}
+
+        a.button:hover {
+            background-color: #2980b9;
+    }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>区块链交易欺诈检测系统</h1>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="json">JSON输入</div>
+            <div class="tab" data-tab="form">表单输入</div>
+            <div class="tab" data-tab="about">关于系统</div>
+        </div>
+        
+        <div class="tab-content active" id="json">
+            <div class="examples">
+                <button class="example-btn" onclick="loadExample('normal')">正常交易示例</button>
+                <button class="example-btn" onclick="loadExample('suspicious')">可疑交易示例</button>
+                <button class="example-btn" onclick="loadExample('zero')">全零特征示例</button>
+            </div>
+            <div class="form-group">
+                <label for="json-input">特征数据 (JSON格式):</label>
+                <textarea id="json-input" placeholder='{"features": [0.5, 0.3, 120, 50, ...其他特征值]}'></textarea>
+            </div>
+                <!-- <button onclick="submitJsonWithPrevent(event)" type="button">分析交易</button> -->
+                <a href="javascript:void(0);" class="button" onclick="submitJson()">分析交易</a>
+        </div>
+        
+        <div class="tab-content" id="form">
+            <p>请输入交易特征值（共36项）:</p>
+            <div class="feature-grid" id="features-form">
+                <!-- 将由JavaScript动态生成 -->
+            </div>
+            <button onclick="submitFormWithPrevent(event)" type="button">分析交易</button>
+            <a href="javascript:void(0);" class="button" onclick="submitForm()">分析交易</a>
+        </div>
+        
+        <div class="tab-content" id="about">
+            <h2>系统说明</h2>
+            <p>本系统使用机器学习模型分析区块链交易特征，检测可能的欺诈行为。</p>
+            <p>主要特征包括：</p>
+            <ul>
+                <li>交易金额与频率</li>
+                <li>钱包年龄与交易历史</li>
+                <li>智能合约交互模式</li>
+                <li>特殊交易模式识别</li>
+            </ul>
+            <p>本系统仅供演示使用，实际使用中请结合其他安全措施进行综合判断。</p>
+        </div>
+        
+        <div class="loading" id="loading">
+            <p>正在分析交易数据，请稍候...</p>
+        </div>
+        
+        <div class="error" id="error">
+            <p id="error-message"></p>
+        </div>
+        
+        <div class="result" id="result">
+            <h2>分析结果</h2>
+            <h3 id="prediction"></h3>
+            <p>置信度: <span id="confidence-value"></span></p>
+            <div class="confidence">
+                <div class="confidence-bar" id="confidence-bar"></div>
+            </div>
+            <div id="details" style="margin-top: 20px;"></div>
+        </div>
+    </div>
+
+    <script>
+        // 添加到 script 的最开始处
+        // 阻止页面中所有可能的提交操作
+        document.addEventListener('DOMContentLoaded', function() {
+            // 阻止所有表单提交
+            document.addEventListener('submit', function(e) {
+                e.preventDefault();
+                return false;
+            });
+            
+            // 阻止所有带有href的链接跳转(除了javascript:void类型)
+            document.addEventListener('click', function(e) {
+                const target = e.target.closest('a');
+                if (target && !target.href.startsWith('javascript:void')) {
+                    e.preventDefault();
+                }
+            });
+        });
+        // 特征列表
+        const FEATURE_COLUMNS = [
+            'transaction_amount', 'gas_price', 'wallet_age', 'num_transactions',
+            'liquidity_removed', 'repeated_token_approvals', 'contract_complexity',
+            'tokens_sent_to_exchanges', 'withdrawal_to_deposit_ratio', 'burst_pattern',
+            'unique_wallet_interactions', 'largest_transaction_amount', 'failed_transaction_ratio',
+            'wallet_reputation_score', 'percentage_funds_transferred', 'token_holdings',
+            'deployer_reputation', 'multiple_token_approvals', 'time_between_transactions',
+            'average_microtransaction_size', 'total_microtransaction_volume', 'percentage_small_transactions',
+            'average_transaction_interval', 'max_consecutive_microtransactions', 'cumulative_transaction_volume',
+            'transaction_variability', 'abnormal_gas_fee_ratio', 'erc20_to_erc721_ratio',
+            'failed_transaction_count', 'inactivity_before_scam', 'day_night_activity_split',
+            'nft_transfer_count', 'suspicious_contract_calls', 'mint_to_transfer_ratio',
+            'dex_interaction_ratio', 'social_media_mentions'
+        ];
+
+        // 示例数据
+        const examples = {
+            normal: {
+                features: [0.1, 0.05, 365, 120, 0, 0, 0.3, 0.1, 0.5, 0, 40, 0.5, 0.02, 0.9, 0.1, 1000, 0.95, 0, 60, 0.1, 10, 0.05, 48, 1, 5000, 0.1, 0.05, 0.2, 1, 0, 0.5, 1, 0, 0.3, 0.8, 15]
+            },
+            suspicious: {
+                features: [2.5, 0.8, 5, 15, 1, 1, 0.9, 0.8, 0.9, 1, 5, 4.0, 0.4, 0.1, 0.95, 10, 0.1, 1, 5, 0.05, 800, 0.8, 3, 20, 5000, 0.9, 0.8, 0.1, 8, 1, 0.9, 5, 7, 0.9, 0.1, 1]
+            },
+            zero: {
+                features: Array(36).fill(0)
+            }
+        };
+
+        // 生成特征输入表单
+        function generateFeatureInputs() {
+            const container = document.getElementById('features-form');
+            FEATURE_COLUMNS.forEach((feature, index) => {
+                const div = document.createElement('div');
+                div.className = 'form-group';
+                
+                const label = document.createElement('label');
+                label.htmlFor = `feature-${index}`;
+                label.textContent = feature.replace(/_/g, ' ');
+                
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.id = `feature-${index}`;
+                input.name = feature;
+                input.step = 'any';
+                input.placeholder = '0.0';
+                
+                div.appendChild(label);
+                div.appendChild(input);
+                container.appendChild(div);
+            });
+        }
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            generateFeatureInputs();
+            
+            // 选项卡切换
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    
+                    // 移除所有选项卡和内容区域的活动状态
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    
+                    // 为当前选项卡和内容区域添加活动状态
+                    this.classList.add('active');
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+        });
+
+        // 加载示例数据
+        function loadExample(type) {
+            document.getElementById('json-input').value = JSON.stringify(examples[type], null, 2);
+        }
+
+        // 提交JSON数据
+        function submitJson() {
+            const jsonInput = document.getElementById('json-input').value;
+            
+            try {
+                const data = JSON.parse(jsonInput);
+                submitData(data);
+            } catch (error) {
+                showError('JSON格式错误，请检查输入');
+            }
+        }
+
+        // 提交表单数据
+        function submitForm() {
+            const features = [];
+            
+            for (let i = 0; i < FEATURE_COLUMNS.length; i++) {
+                const value = document.getElementById(`feature-${i}`).value;
+                features.push(value === '' ? 0 : parseFloat(value));
+            }
+            
+            submitData({ features });
+        }
+
+        // 发送数据到API
+        function submitData(data) {
+            // 清除先前的结果和错误
+            hideResult();
+            hideError();
+            showLoading();
+            
+            fetch('http://127.0.0.1:8080/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP错误: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(result => {
+                displayResult(result);
+            })
+            .catch(error => {
+                showError('请求失败: ' + error.message);
+            })
+            .finally(() => {
+                hideLoading();
+            });
+        }
+
+        // 显示结果
+        function displayResult(data) {
+            const resultDiv = document.getElementById('result');
+            const predictionEl = document.getElementById('prediction');
+            const confidenceValue = document.getElementById('confidence-value');
+            const confidenceBar = document.getElementById('confidence-bar');
+            const details = document.getElementById('details');
+            
+            if (data.is_scam === 1) {
+                resultDiv.className = 'result scam';
+                predictionEl.textContent = '⚠️ 检测到欺诈风险';
+                confidenceBar.style.backgroundColor = '#f44336';
+            } else {
+                resultDiv.className = 'result not-scam';
+                predictionEl.textContent = '✅ 交易正常';
+                confidenceBar.style.backgroundColor = '#4caf50';
+            }
+            
+            const confidencePct = (data.confidence * 100).toFixed(2);
+            confidenceValue.textContent = `${confidencePct}%`;
+            
+            // 延迟设置宽度以使动画生效
+            setTimeout(() => {
+                confidenceBar.style.width = `${confidencePct}%`;
+            }, 100);
+            
+            details.innerHTML = `
+                <p><strong>API 响应详情:</strong></p>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+            
+            resultDiv.style.display = 'block';
+        }
+
+        // 显示/隐藏加载状态
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        // 显示/隐藏错误信息
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            const errorMessage = document.getElementById('error-message');
+            
+            errorMessage.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+        
+        function hideError() {
+            document.getElementById('error').style.display = 'none';
+        }
+        
+        // 隐藏结果
+        function hideResult() {
+            document.getElementById('result').style.display = 'none';
+        }
+        // 添加到 script 标签内的末尾
+        function submitJsonWithPrevent(event) {
+            event.preventDefault();  // 阻止默认行为
+            submitJson();
+            return false;  // 为了兼容性，确保返回 false
+        }
+        
+        function submitFormWithPrevent(event) {
+            event.preventDefault();  // 阻止默认行为
+            submitForm();
+            return false;  // 为了兼容性，确保返回 false
+        }
+    </script>
+</body>
+</html>
